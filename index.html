@@ -24,7 +24,6 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            /* Transition for smooth dark mode switch */
             transition: background-color 0.3s, color 0.3s;
         }
         
@@ -41,6 +40,9 @@
         /* Reaction buttons */
         .reaction-btn {
             transition: all 0.2s;
+        }
+        .reaction-btn:active {
+            transform: scale(0.95); /* Small "press" animation */
         }
         .reaction-btn.active {
             color: #3b82f6; /* Blue-500 */
@@ -61,6 +63,15 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+
+        /* Animation for the refresh icon */
+        .spin-once {
+            animation: spin 0.5s ease-in-out;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 min-h-screen flex flex-col items-center pb-20">
@@ -75,7 +86,7 @@
             </div>
 
             <!-- Dark Mode Toggle Button -->
-            <button onclick="toggleDarkMode()" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-yellow-400 flex items-center justify-center transition-colors">
+            <button onclick="toggleDarkMode()" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-yellow-400 flex items-center justify-center transition-colors hover:bg-slate-200 dark:hover:bg-slate-600">
                 <i class="fa-solid fa-moon dark:hidden"></i> <!-- Show moon in light mode -->
                 <i class="fa-solid fa-sun hidden dark:block"></i> <!-- Show sun in dark mode -->
             </button>
@@ -84,9 +95,15 @@
 
     <!-- 4. DAILY PROMPT SECTION -->
     <section class="max-w-2xl w-full px-4 mt-6">
-        <div class="bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-700 dark:to-slate-600 rounded-lg p-6 text-white shadow-sm text-center">
-            <h2 class="text-xs font-bold uppercase tracking-widest text-slate-300 mb-2">Daily Unity Prompt</h2>
-            <p class="text-lg italic font-light" id="daily-prompt">"Loading prompt..."</p>
+        <div class="bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-700 dark:to-slate-600 rounded-lg p-6 text-white shadow-sm text-center relative group">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-slate-300">Daily Unity Prompt</h2>
+                <!-- Refresh Button -->
+                <button onclick="loadDailyPrompt(this)" class="text-slate-400 hover:text-white transition-colors" title="New Prompt">
+                    <i class="fa-solid fa-arrows-rotate text-xs"></i>
+                </button>
+            </div>
+            <p class="text-lg italic font-light transition-all duration-300" id="daily-prompt">"Loading prompt..."</p>
         </div>
     </section>
 
@@ -112,7 +129,7 @@
 
                 <div class="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-3">
                     <span id="char-count" class="text-xs text-slate-400">0/300</span>
-                    <button onclick="createNewPost()" class="bg-slate-800 dark:bg-slate-600 hover:bg-slate-700 dark:hover:bg-slate-500 text-white text-sm font-medium px-6 py-1.5 rounded transition">
+                    <button id="submit-btn" onclick="createNewPost()" class="bg-slate-800 dark:bg-slate-600 hover:bg-slate-700 dark:hover:bg-slate-500 text-white text-sm font-medium px-6 py-1.5 rounded transition disabled:opacity-50 disabled:cursor-not-allowed">
                         Post
                     </button>
                 </div>
@@ -120,7 +137,7 @@
         </div>
     </section>
 
-    <!-- 6. FILTER BUTTONS (New Feature) -->
+    <!-- 6. FILTER BUTTONS -->
     <section class="max-w-2xl w-full px-4 mt-6">
         <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" id="filter-buttons">
             <button onclick="filterFeed('All')" class="filter-chip active whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">
@@ -220,7 +237,9 @@
             "How can you show humility to a fellow believer today?",
             "Who can you encourage with a specific scripture today?",
             "Reflect on a time someone showed you grace when you didn't deserve it.",
-            "Pray for a church denomination different from your own today."
+            "Pray for a church denomination different from your own today.",
+            "Share a specific verse that gave you hope recently.",
+            "What is one way you can be a 'peacemaker' this week?"
         ];
 
         let currentFilter = 'All';
@@ -235,33 +254,40 @@
         // --- C. FUNCTIONS ---
 
         function toggleDarkMode() {
-            // Adds or removes the 'dark' class from the <html> tag
             document.documentElement.classList.toggle('dark');
         }
 
         function filterFeed(category) {
             currentFilter = category;
             
-            // 1. Update Buttons Visuals
             const buttons = document.querySelectorAll('.filter-chip');
             buttons.forEach(btn => {
-                // Reset all buttons to "inactive" style
                 btn.className = 'filter-chip whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400';
-                
-                // Set active button style if text matches (handling "All" vs specific mapping)
-                // Note: logic simplified for this specific button setup
                 if(btn.textContent.trim().includes(category.split(' ')[0]) || (category === 'All' && btn.textContent.trim() === 'All')) {
                      btn.className = 'filter-chip active whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium bg-slate-800 dark:bg-slate-600 text-white border border-slate-800 dark:border-slate-600';
                 }
             });
 
-            // 2. Re-render the feed
             renderFeed();
         }
 
-        function loadDailyPrompt() {
-            const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
-            document.getElementById('daily-prompt').textContent = randomPrompt;
+        function loadDailyPrompt(btn = null) {
+            // If button passed (refresh click), add spin animation
+            if(btn) {
+                const icon = btn.querySelector('i');
+                icon.classList.add('spin-once');
+                setTimeout(() => icon.classList.remove('spin-once'), 500); // Remove class after animation
+            }
+
+            const promptElement = document.getElementById('daily-prompt');
+            // Basic text fade effect
+            promptElement.style.opacity = '0';
+            
+            setTimeout(() => {
+                const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+                promptElement.textContent = `"${randomPrompt}"`;
+                promptElement.style.opacity = '1';
+            }, 200);
         }
 
         function setupCharCounter() {
@@ -283,7 +309,6 @@
             const container = document.getElementById('feed-container');
             container.innerHTML = ''; 
 
-            // Filter logic
             const postsToShow = currentFilter === 'All' 
                 ? dummyPosts 
                 : dummyPosts.filter(post => post.type === currentFilter);
@@ -298,7 +323,7 @@
             }
 
             postsToShow.forEach(post => {
-                // Badge Colors
+                // Badge Colors Logic
                 let badgeColor = "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300";
                 if(post.type === "Prayer Request") badgeColor = "bg-amber-50 text-amber-700 border border-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
                 if(post.type === "Praise Report") badgeColor = "bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
@@ -326,13 +351,19 @@
 
                         <div class="flex gap-2 border-t border-slate-50 dark:border-slate-700 pt-3">
                             <button onclick="toggleReaction(this)" class="reaction-btn flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700">
-                                <i class="fa-solid fa-hands-praying"></i> <span class="hidden sm:inline">Praying</span>
+                                <i class="fa-solid fa-hands-praying"></i> 
+                                <span class="hidden sm:inline">Praying</span>
+                                <span class="count-display ml-1.5 opacity-75 text-[10px] font-bold">${post.stats.pray}</span>
                             </button>
                             <button onclick="toggleReaction(this)" class="reaction-btn flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700">
-                                <i class="fa-solid fa-heart"></i> <span class="hidden sm:inline">Stand With You</span>
+                                <i class="fa-solid fa-heart"></i> 
+                                <span class="hidden sm:inline">Stand With You</span>
+                                <span class="count-display ml-1.5 opacity-75 text-[10px] font-bold">${post.stats.stand}</span>
                             </button>
                             <button onclick="toggleReaction(this)" class="reaction-btn flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700">
-                                <i class="fa-solid fa-check"></i> <span class="hidden sm:inline">Amen</span>
+                                <i class="fa-solid fa-check"></i> 
+                                <span class="hidden sm:inline">Amen</span>
+                                <span class="count-display ml-1.5 opacity-75 text-[10px] font-bold">${post.stats.amen}</span>
                             </button>
                         </div>
                     </article>
@@ -345,6 +376,7 @@
         function createNewPost() {
             const input = document.getElementById('post-content');
             const typeSelect = document.getElementById('post-type');
+            const btn = document.getElementById('submit-btn');
             const content = input.value.trim();
 
             if (!content) {
@@ -352,26 +384,51 @@
                 return;
             }
 
-            const newPost = {
-                id: Date.now(),
-                author: "You (Guest)",
-                type: typeSelect.value,
-                content: content,
-                timestamp: "Just now",
-                stats: { amen: 0, pray: 0, stand: 0 }
-            };
+            // SIMULATE LOADING STATE
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Posting...';
+            btn.disabled = true;
 
-            dummyPosts.unshift(newPost);
-            
-            // Reset filter to 'All' so the user sees their new post immediately
-            filterFeed('All');
+            setTimeout(() => {
+                const newPost = {
+                    id: Date.now(),
+                    author: "You (Guest)",
+                    type: typeSelect.value,
+                    content: content,
+                    timestamp: "Just now",
+                    stats: { amen: 0, pray: 0, stand: 0 }
+                };
 
-            input.value = "";
-            document.getElementById('char-count').textContent = "0/300";
+                dummyPosts.unshift(newPost);
+                
+                filterFeed('All');
+
+                // Reset Inputs
+                input.value = "";
+                document.getElementById('char-count').textContent = "0/300";
+                
+                // Reset Button
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }, 800); // 800ms delay to feel "real"
         }
 
         function toggleReaction(btn) {
-            btn.classList.toggle('active');
+            // 1. Toggle Visual State
+            const isNowActive = btn.classList.toggle('active');
+            
+            // 2. Find the count number inside this button
+            const countSpan = btn.querySelector('.count-display');
+            
+            // 3. Math: Add 1 if active, Subtract 1 if inactive
+            if(countSpan) {
+                let currentCount = parseInt(countSpan.textContent);
+                if(isNowActive) {
+                    countSpan.textContent = currentCount + 1;
+                } else {
+                    countSpan.textContent = currentCount - 1;
+                }
+            }
         }
     </script>
 </body>
