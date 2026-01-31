@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>God Factor | One Body. One Lord.</title>
+    
+    <!-- 1. EXTERNAL TOOLS (CDNs) -->
+    <!-- Tailwind CSS with Dark Mode Configured -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class', // Enables toggling dark mode manually
+        }
+    </script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <!-- 2. INTERNAL STYLES -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Transition for smooth dark mode switch */
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        /* Custom styling for the "Unity Card" */
+        .unity-card {
+            transition: all 0.2s ease;
+        }
+
+        .unity-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Reaction buttons */
+        .reaction-btn {
+            transition: all 0.2s;
+        }
+        .reaction-btn.active {
+            color: #3b82f6; /* Blue-500 */
+            background-color: #eff6ff; /* Blue-50 */
+            font-weight: 600;
+        }
+        /* Dark mode specific for active button */
+        .dark .reaction-btn.active {
+            background-color: #1e293b; /* Slate-800 */
+            color: #60a5fa; /* Blue-400 */
+        }
+
+        /* Filter Buttons Scrollbar Hide */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 min-h-screen flex flex-col items-center pb-20">
+
+    <!-- 3. HEADER SECTION -->
+    <header class="w-full bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50 transition-colors">
+        <div class="max-w-2xl mx-auto px-4 py-4 flex justify-between items-center">
+            <!-- Logo & Text -->
+            <div class="text-left">
+                <h1 class="text-2xl font-bold tracking-tight text-slate-800 dark:text-white">God Factor</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">One Body. One Lord. One Witness.</p>
+            </div>
+
+            <!-- Dark Mode Toggle Button -->
+            <button onclick="toggleDarkMode()" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-yellow-400 flex items-center justify-center transition-colors">
+                <i class="fa-solid fa-moon dark:hidden"></i> <!-- Show moon in light mode -->
+                <i class="fa-solid fa-sun hidden dark:block"></i> <!-- Show sun in dark mode -->
+            </button>
+        </div>
+    </header>
+
+    <!-- 4. DAILY PROMPT SECTION -->
+    <section class="max-w-2xl w-full px-4 mt-6">
+        <div class="bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-700 dark:to-slate-600 rounded-lg p-6 text-white shadow-sm text-center">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-slate-300 mb-2">Daily Unity Prompt</h2>
+            <p class="text-lg italic font-light" id="daily-prompt">"Loading prompt..."</p>
+        </div>
+    </section>
+
+    <!-- 5. NEW POST INPUT AREA -->
+    <section class="max-w-2xl w-full px-4 mt-6">
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
+            <textarea 
+                id="post-content" 
+                class="w-full resize-none outline-none text-slate-700 dark:text-slate-200 placeholder-slate-400 bg-transparent"
+                rows="3" 
+                placeholder="Share a scripture, prayer, or encouragement..."
+                maxlength="300"
+            ></textarea>
+            
+            <div class="flex flex-col sm:flex-row justify-between items-center mt-3 border-t border-slate-100 dark:border-slate-700 pt-3 gap-3">
+                <!-- Tag Selector -->
+                <select id="post-type" class="w-full sm:w-auto text-xs bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-2 text-slate-600 dark:text-slate-200 outline-none">
+                    <option value="Encouragement">Encouragement</option>
+                    <option value="Scripture Reflection">Scripture Reflection</option>
+                    <option value="Prayer Request">Prayer Request</option>
+                    <option value="Praise Report">Praise Report</option>
+                </select>
+
+                <div class="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-3">
+                    <span id="char-count" class="text-xs text-slate-400">0/300</span>
+                    <button onclick="createNewPost()" class="bg-slate-800 dark:bg-slate-600 hover:bg-slate-700 dark:hover:bg-slate-500 text-white text-sm font-medium px-6 py-1.5 rounded transition">
+                        Post
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. FILTER BUTTONS (New Feature) -->
+    <section class="max-w-2xl w-full px-4 mt-6">
+        <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" id="filter-buttons">
+            <button onclick="filterFeed('All')" class="filter-chip active whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">
+                All
+            </button>
+            <button onclick="filterFeed('Scripture Reflection')" class="filter-chip whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
+                Scripture
+            </button>
+            <button onclick="filterFeed('Prayer Request')" class="filter-chip whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
+                Prayer
+            </button>
+            <button onclick="filterFeed('Praise Report')" class="filter-chip whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
+                Praise
+            </button>
+            <button onclick="filterFeed('Encouragement')" class="filter-chip whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
+                Encouragement
+            </button>
+        </div>
+    </section>
+
+    <!-- 7. THE UNITY FEED -->
+    <main id="feed-container" class="max-w-2xl w-full px-4 mt-4 space-y-4">
+        <!-- Posts will be injected here by JavaScript -->
+    </main>
+
+    <!-- 8. JAVASCRIPT LOGIC -->
+    <script>
+        // --- A. DUMMY DATA ---
+        const dummyPosts = [
+            {
+                id: 1,
+                author: "Sarah J.",
+                type: "Scripture Reflection",
+                content: "Reading Ephesians 4:3 today. 'Make every effort to keep the unity of the Spirit through the bond of peace.' Unity takes effort, but the peace brings is worth it. Let's be patient with one another today.",
+                timestamp: "2 hours ago",
+                stats: { amen: 12, pray: 0, stand: 5 }
+            },
+            {
+                id: 2,
+                author: "David M.",
+                type: "Prayer Request",
+                content: "Please pray for my local church. We are navigating some difficult conversations about leadership. Praying for wisdom, humility, and that love would be our guiding star.",
+                timestamp: "4 hours ago",
+                stats: { amen: 3, pray: 24, stand: 8 }
+            },
+            {
+                id: 3,
+                author: "Grace L.",
+                type: "Praise Report",
+                content: "God is so faithful! After 6 months of unemployment, I received a job offer this morning. Thank you to everyone who stood in the gap for me.",
+                timestamp: "5 hours ago",
+                stats: { amen: 45, pray: 0, stand: 10 }
+            },
+            {
+                id: 4,
+                author: "Marcus T.",
+                type: "Encouragement",
+                content: "Just a reminder: You are part of a body that spans the entire globe. You are never alone in your walk. Someone, somewhere, is praying for the church, and that includes you.",
+                timestamp: "1 day ago",
+                stats: { amen: 18, pray: 2, stand: 15 }
+            },
+            {
+                id: 5,
+                author: "Elena R.",
+                type: "Scripture Reflection",
+                content: "Psalm 133:1 - 'How good and pleasant it is when God’s people live together in unity!' It truly is pleasant. It refreshes the soul.",
+                timestamp: "1 day ago",
+                stats: { amen: 22, pray: 0, stand: 3 }
+            },
+            {
+                id: 6,
+                author: "System",
+                type: "Encouragement",
+                content: "Let no debt remain outstanding, except the continuing debt to love one another. - Romans 13:8",
+                timestamp: "2 days ago",
+                stats: { amen: 15, pray: 0, stand: 2 }
+            },
+            {
+                id: 7,
+                author: "James P.",
+                type: "Prayer Request",
+                content: "Feeling spiritually dry lately. It feels like I'm going through the motions. Would appreciate prayers for a fresh hunger for the Word.",
+                timestamp: "2 days ago",
+                stats: { amen: 2, pray: 19, stand: 7 }
+            },
+            {
+                id: 8,
+                author: "Hannah K.",
+                type: "Praise Report",
+                content: "My neighbor finally asked me about my faith today after I helped her with groceries. It was a small seed planted!",
+                timestamp: "3 days ago",
+                stats: { amen: 28, pray: 5, stand: 0 }
+            }
+        ];
+
+        const prompts = [
+            "How can you show humility to a fellow believer today?",
+            "Who can you encourage with a specific scripture today?",
+            "Reflect on a time someone showed you grace when you didn't deserve it.",
+            "Pray for a church denomination different from your own today."
+        ];
+
+        let currentFilter = 'All';
+
+        // --- B. INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDailyPrompt();
+            renderFeed();
+            setupCharCounter();
+        });
+
+        // --- C. FUNCTIONS ---
+
+        function toggleDarkMode() {
+            // Adds or removes the 'dark' class from the <html> tag
+            document.documentElement.classList.toggle('dark');
+        }
+
+        function filterFeed(category) {
+            currentFilter = category;
+            
+            // 1. Update Buttons Visuals
+            const buttons = document.querySelectorAll('.filter-chip');
+            buttons.forEach(btn => {
+                // Reset all buttons to "inactive" style
+                btn.className = 'filter-chip whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400';
+                
+                // Set active button style if text matches (handling "All" vs specific mapping)
+                // Note: logic simplified for this specific button setup
+                if(btn.textContent.trim().includes(category.split(' ')[0]) || (category === 'All' && btn.textContent.trim() === 'All')) {
+                     btn.className = 'filter-chip active whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium bg-slate-800 dark:bg-slate-600 text-white border border-slate-800 dark:border-slate-600';
+                }
+            });
+
+            // 2. Re-render the feed
+            renderFeed();
+        }
+
+        function loadDailyPrompt() {
+            const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+            document.getElementById('daily-prompt').textContent = randomPrompt;
+        }
+
+        function setupCharCounter() {
+            const input = document.getElementById('post-content');
+            const counter = document.getElementById('char-count');
+            
+            input.addEventListener('input', () => {
+                const current = input.value.length;
+                counter.textContent = `${current}/300`;
+                if(current >= 300) {
+                    counter.classList.add('text-red-500');
+                } else {
+                    counter.classList.remove('text-red-500');
+                }
+            });
+        }
+
+        function renderFeed() {
+            const container = document.getElementById('feed-container');
+            container.innerHTML = ''; 
+
+            // Filter logic
+            const postsToShow = currentFilter === 'All' 
+                ? dummyPosts 
+                : dummyPosts.filter(post => post.type === currentFilter);
+
+            if (postsToShow.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10">
+                        <p class="text-slate-400 text-sm">No posts found in this category yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            postsToShow.forEach(post => {
+                // Badge Colors
+                let badgeColor = "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300";
+                if(post.type === "Prayer Request") badgeColor = "bg-amber-50 text-amber-700 border border-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
+                if(post.type === "Praise Report") badgeColor = "bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
+                
+                const cardHTML = `
+                    <article class="unity-card bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-5 transition-colors">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-500 dark:text-slate-300">
+                                    ${post.author.charAt(0)}
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">${post.author}</h3>
+                                    <p class="text-xs text-slate-400">${post.timestamp}</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] uppercase font-bold px-2 py-1 rounded-full ${badgeColor}">
+                                ${post.type}
+                            </span>
+                        </div>
+                        
+                        <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed mb-4">
+                            ${post.content}
+                        </p>
+
+                        <div class="flex gap-2 border-t border-slate-50 dark:border-slate-700 pt-3">
+                            <button onclick="toggleReaction(this)" class="reaction-btn flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700">
+                                <i class="fa-solid fa-hands-praying"></i> <span class="hidden sm:inline">Praying</span>
+                            </button>
+                            <button onclick="toggleReaction(this)" class="reaction-btn flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700">
+                                <i class="fa-solid fa-heart"></i> <span class="hidden sm:inline">Stand With You</span>
+                            </button>
+                            <button onclick="toggleReaction(this)" class="reaction-btn flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700">
+                                <i class="fa-solid fa-check"></i> <span class="hidden sm:inline">Amen</span>
+                            </button>
+                        </div>
+                    </article>
+                `;
+                
+                container.innerHTML += cardHTML;
+            });
+        }
+
+        function createNewPost() {
+            const input = document.getElementById('post-content');
+            const typeSelect = document.getElementById('post-type');
+            const content = input.value.trim();
+
+            if (!content) {
+                alert("Please write something before posting.");
+                return;
+            }
+
+            const newPost = {
+                id: Date.now(),
+                author: "You (Guest)",
+                type: typeSelect.value,
+                content: content,
+                timestamp: "Just now",
+                stats: { amen: 0, pray: 0, stand: 0 }
+            };
+
+            dummyPosts.unshift(newPost);
+            
+            // Reset filter to 'All' so the user sees their new post immediately
+            filterFeed('All');
+
+            input.value = "";
+            document.getElementById('char-count').textContent = "0/300";
+        }
+
+        function toggleReaction(btn) {
+            btn.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>
